@@ -1,0 +1,12 @@
+Source: ros-melodic-urg-stamped
+Section: misc
+Priority: extra
+Maintainer: Atsushi Watanabe <atsushi.w@ieee.org>
+Build-Depends: debhelper (>= 9.0.0), ros-melodic-catkin, ros-melodic-roscpp, ros-melodic-roslint, ros-melodic-rostest, ros-melodic-rosunit, ros-melodic-sensor-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-melodic-urg-stamped
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-melodic-roscpp, ros-melodic-sensor-msgs
+Description: Precisely stamped URG driver for ROS
