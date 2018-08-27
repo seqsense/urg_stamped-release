@@ -1,0 +1,12 @@
+Source: ros-lunar-urg-stamped
+Section: misc
+Priority: extra
+Maintainer: Atsushi Watanabe <atsushi.w@ieee.org>
+Build-Depends: debhelper (>= 9.0.0), ros-lunar-catkin, ros-lunar-roscpp, ros-lunar-roslint, ros-lunar-rostest, ros-lunar-rosunit, ros-lunar-sensor-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-lunar-urg-stamped
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-lunar-roscpp, ros-lunar-sensor-msgs
+Description: Precisely stamped URG driver for ROS
