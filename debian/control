@@ -1,0 +1,12 @@
+Source: ros-indigo-urg-stamped
+Section: misc
+Priority: extra
+Maintainer: Atsushi Watanabe <atsushi.w@ieee.org>
+Build-Depends: debhelper (>= 9.0.0), ros-indigo-catkin, ros-indigo-roscpp, ros-indigo-roslint, ros-indigo-rostest, ros-indigo-rosunit, ros-indigo-sensor-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-indigo-urg-stamped
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-indigo-roscpp, ros-indigo-sensor-msgs
+Description: Precisely stamped URG driver for ROS
