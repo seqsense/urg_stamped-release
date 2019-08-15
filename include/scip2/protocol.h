@@ -22,11 +22,10 @@
 
 #include <scip2/connection.h>
 #include <scip2/response.h>
+#include <scip2/logger.h>
 
 #include <map>
 #include <string>
-
-#include <old_boost_fix.h>
 
 namespace scip2
 {
@@ -44,13 +43,13 @@ protected:
     std::string echo_back;
     if (!std::getline(stream, echo_back))
     {
-      std::cerr << "Failed to get echo back" << std::endl;
+      logger::error() << "Failed to get echo back" << std::endl;
       return;
     }
     std::string status;
     if (!std::getline(stream, status))
     {
-      std::cerr << "Failed to get status" << std::endl;
+      logger::error() << "Failed to get status" << std::endl;
       return;
     }
     status.pop_back();  // remove checksum
@@ -70,7 +69,7 @@ public:
     : connection_(connection)
   {
     connection_->registerReceiveCallback(
-        boost::bind(&scip2::Protocol::cbReceive, this, boost::placeholders::_1, boost::placeholders::_2));
+        boost::bind(&scip2::Protocol::cbReceive, this, boost::arg<1>(), boost::arg<2>()));
   }
 
   void sendCommand(
