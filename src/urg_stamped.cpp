@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The urg_stamped Authors
+ * Copyright 2018-2019 The urg_stamped Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,9 @@
 #include <scip2/walltime.h>
 
 #include <first_order_filter.h>
-#include <old_boost_fix.h>
 #include <timestamp_moving_average.h>
 #include <timestamp_outlier_remover.h>
+#include <ros_logger.h>
 
 class UrgStampedNode
 {
@@ -193,7 +193,7 @@ protected:
       {
         scip_->sendCommand(
             "TM1",
-            boost::bind(&UrgStampedNode::cbTMSend, this, boost::placeholders::_1));
+            boost::bind(&UrgStampedNode::cbTMSend, this, boost::arg<1>()));
         break;
       }
       case '1':
@@ -243,7 +243,7 @@ protected:
           ros::Duration(0.005).sleep();
           scip_->sendCommand(
               "TM1",
-              boost::bind(&UrgStampedNode::cbTMSend, this, boost::placeholders::_1));
+              boost::bind(&UrgStampedNode::cbTMSend, this, boost::arg<1>()));
         }
         break;
       }
@@ -389,7 +389,7 @@ protected:
   {
     scip_->sendCommand(
         "II",
-        boost::bind(&UrgStampedNode::cbIISend, this, boost::placeholders::_1));
+        boost::bind(&UrgStampedNode::cbIISend, this, boost::arg<1>()));
     timer_sync_ = nh_.createTimer(
         ros::Duration(sync_interval_(random_engine_)),
         &UrgStampedNode::timeSync, this, true);
@@ -397,7 +397,7 @@ protected:
   void delayEstimation(const ros::TimerEvent &event = ros::TimerEvent())
   {
     timer_sync_.stop();
-    ROS_INFO("Starting communication delay estimation");
+    ROS_DEBUG("Starting communication delay estimation");
     scip_->sendCommand("QT");
     timer_try_tm_ = nh_.createTimer(
         ros::Duration(0.05),
@@ -448,47 +448,47 @@ public:
     scip_.reset(new scip2::Protocol(device_));
     scip_->registerCallback<scip2::ResponsePP>(
         boost::bind(&UrgStampedNode::cbPP, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3,
-                    boost::placeholders::_4));
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>(),
+                    boost::arg<4>()));
     scip_->registerCallback<scip2::ResponseVV>(
         boost::bind(&UrgStampedNode::cbVV, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3,
-                    boost::placeholders::_4));
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>(),
+                    boost::arg<4>()));
     scip_->registerCallback<scip2::ResponseII>(
         boost::bind(&UrgStampedNode::cbII, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3,
-                    boost::placeholders::_4));
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>(),
+                    boost::arg<4>()));
     scip_->registerCallback<scip2::ResponseMD>(
         boost::bind(&UrgStampedNode::cbM, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3,
-                    boost::placeholders::_4,
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>(),
+                    boost::arg<4>(),
                     false));
     scip_->registerCallback<scip2::ResponseME>(
         boost::bind(&UrgStampedNode::cbM, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3,
-                    boost::placeholders::_4,
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>(),
+                    boost::arg<4>(),
                     true));
     scip_->registerCallback<scip2::ResponseTM>(
         boost::bind(&UrgStampedNode::cbTM, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3,
-                    boost::placeholders::_4));
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>(),
+                    boost::arg<4>()));
     scip_->registerCallback<scip2::ResponseQT>(
         boost::bind(&UrgStampedNode::cbQT, this,
-                    boost::placeholders::_1,
-                    boost::placeholders::_2,
-                    boost::placeholders::_3));
+                    boost::arg<1>(),
+                    boost::arg<2>(),
+                    boost::arg<3>()));
 
     if (delay_estim_interval > 0.0)
     {
@@ -510,6 +510,8 @@ public:
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "urg_stamped");
+  urg_stamped::setROSLogger();
+
   UrgStampedNode node;
   node.spin();
 
