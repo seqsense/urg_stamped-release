@@ -42,10 +42,10 @@ class ResponseTM : public Response
 {
 public:
   using Callback = boost::function<void(
-      const boost::posix_time::ptime &,
-      const std::string &,
-      const std::string &,
-      const Timestamp &)>;
+      const boost::posix_time::ptime&,
+      const std::string&,
+      const std::string&,
+      const Timestamp&)>;
 
 protected:
   Callback cb_;
@@ -56,17 +56,16 @@ public:
     return std::string("TM");
   }
   void operator()(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      std::istream &stream)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      std::istream& stream)
   {
     Timestamp timestamp;
     if (status != "00")
     {
       if (cb_)
         cb_(time_read, echo_back, status, timestamp);
-      logger::error() << echo_back << " errored with " << status << std::endl;
       return;
     }
     if (echo_back[2] == '1')
