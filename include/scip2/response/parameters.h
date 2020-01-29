@@ -31,10 +31,10 @@ class ResponseParams : public Response
 {
 public:
   using Callback = boost::function<void(
-      const boost::posix_time::ptime &,
-      const std::string &,
-      const std::string &,
-      const std::map<std::string, std::string> &)>;
+      const boost::posix_time::ptime&,
+      const std::string&,
+      const std::string&,
+      const std::map<std::string, std::string>&)>;
 
 protected:
   Callback cb_;
@@ -42,17 +42,16 @@ protected:
 public:
   virtual std::string getCommandCode() const = 0;
   void operator()(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      std::istream &stream)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      std::istream& stream)
   {
     std::map<std::string, std::string> params;
     if (status != "00")
     {
       if (cb_)
         cb_(time_read, echo_back, status, params);
-      logger::error() << echo_back << " errored with " << status << std::endl;
       return;
     }
     std::string line;

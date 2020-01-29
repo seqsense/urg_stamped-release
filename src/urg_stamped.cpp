@@ -46,6 +46,9 @@ protected:
   ros::Timer timer_delay_estim_;
   ros::Timer timer_try_tm_;
 
+  int error_count_;
+  int error_count_max_;
+
   sensor_msgs::LaserScan msg_base_;
   uint32_t step_min_;
   uint32_t step_max_;
@@ -98,9 +101,9 @@ protected:
   TimestampMovingAverage timestamp_moving_average_;
 
   ros::Time calculateDeviceTimeOriginByAverage(
-      const boost::posix_time::ptime &time_request,
-      const boost::posix_time::ptime &time_response,
-      const uint64_t &device_timestamp)
+      const boost::posix_time::ptime& time_request,
+      const boost::posix_time::ptime& time_response,
+      const uint64_t& device_timestamp)
   {
     const auto delay =
         ros::Time::fromBoost(time_response) -
@@ -110,9 +113,9 @@ protected:
     return time_at_device_timestamp - ros::Duration().fromNSec(device_timestamp * 1e6);
   }
   ros::Time calculateDeviceTimeOrigin(
-      const boost::posix_time::ptime &time_response,
-      const uint64_t &device_timestamp,
-      ros::Time &time_at_device_timestamp)
+      const boost::posix_time::ptime& time_response,
+      const uint64_t& device_timestamp,
+      ros::Time& time_at_device_timestamp)
   {
     time_at_device_timestamp = ros::Time::fromBoost(time_response) - estimated_communication_delay_ * 0.5;
 
@@ -120,12 +123,23 @@ protected:
   }
 
   void cbM(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      const scip2::ScanData &scan,
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      const scip2::ScanData& scan,
       const bool has_intensity)
   {
+    if (status != "99")
+    {
+      if (status != "00")
+      {
+        ROS_ERROR("%s errored with %s", echo_back.c_str(), status.c_str());
+        errorCountIncrement();
+      }
+      return;
+    }
+    error_count_ = 0;
+
     const uint64_t walltime_device = walltime_.update(scan.timestamp_);
 
     const auto estimated_timestamp_lf =
@@ -162,29 +176,33 @@ protected:
     }
 
     msg.ranges.reserve(scan.ranges_.size());
-    for (auto &r : scan.ranges_)
+    for (auto& r : scan.ranges_)
       msg.ranges.push_back(r * 1e-3);
     if (has_intensity)
     {
       msg.intensities.reserve(scan.intensities_.size());
-      for (auto &r : scan.intensities_)
+      for (auto& r : scan.intensities_)
         msg.intensities.push_back(r);
     }
 
     pub_scan_.publish(msg);
   }
-  void cbTMSend(const boost::posix_time::ptime &time_send)
+  void cbTMSend(const boost::posix_time::ptime& time_send)
   {
     time_tm_request = time_send;
   }
   void cbTM(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      const scip2::Timestamp &time_device)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      const scip2::Timestamp& time_device)
   {
     if (status != "00")
+    {
+      ROS_ERROR("%s errored with %s", echo_back.c_str(), status.c_str());
+      errorCountIncrement();
       return;
+    }
 
     timer_try_tm_.stop();
     switch (echo_back[2])
@@ -262,11 +280,18 @@ protected:
     }
   }
   void cbPP(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      const std::map<std::string, std::string> &params)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      const std::map<std::string, std::string>& params)
   {
+    if (status != "00")
+    {
+      ROS_ERROR("%s errored with %s", echo_back.c_str(), status.c_str());
+      errorCountIncrement();
+      return;
+    }
+
     const auto amin = params.find("AMIN");
     const auto amax = params.find("AMAX");
     const auto dmin = params.find("DMIN");
@@ -299,22 +324,35 @@ protected:
     delayEstimation();
   }
   void cbVV(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      const std::map<std::string, std::string> &params)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      const std::map<std::string, std::string>& params)
   {
+    if (status != "00")
+    {
+      ROS_ERROR("%s errored with %s", echo_back.c_str(), status.c_str());
+      errorCountIncrement();
+      return;
+    }
   }
-  void cbIISend(const boost::posix_time::ptime &time_send)
+  void cbIISend(const boost::posix_time::ptime& time_send)
   {
     time_ii_request = time_send;
   }
   void cbII(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status,
-      const std::map<std::string, std::string> &params)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status,
+      const std::map<std::string, std::string>& params)
   {
+    if (status != "00")
+    {
+      ROS_ERROR("%s errored with %s", echo_back.c_str(), status.c_str());
+      errorCountIncrement();
+      return;
+    }
+
     const auto delay =
         ros::Time::fromBoost(time_read) -
         ros::Time::fromBoost(time_ii_request);
@@ -373,10 +411,17 @@ protected:
     }
   }
   void cbQT(
-      const boost::posix_time::ptime &time_read,
-      const std::string &echo_back,
-      const std::string &status)
+      const boost::posix_time::ptime& time_read,
+      const std::string& echo_back,
+      const std::string& status)
   {
+    if (status != "00")
+    {
+      ROS_ERROR("%s errored with %s", echo_back.c_str(), status.c_str());
+      errorCountIncrement();
+      return;
+    }
+
     ROS_DEBUG("Scan data stopped");
   }
   void cbConnect()
@@ -385,7 +430,7 @@ protected:
     device_->startWatchdog(boost::posix_time::seconds(1));
   }
 
-  void timeSync(const ros::TimerEvent &event = ros::TimerEvent())
+  void timeSync(const ros::TimerEvent& event = ros::TimerEvent())
   {
     scip_->sendCommand(
         "II",
@@ -394,7 +439,7 @@ protected:
         ros::Duration(sync_interval_(random_engine_)),
         &UrgStampedNode::timeSync, this, true);
   }
-  void delayEstimation(const ros::TimerEvent &event = ros::TimerEvent())
+  void delayEstimation(const ros::TimerEvent& event = ros::TimerEvent())
   {
     timer_sync_.stop();
     ROS_DEBUG("Starting communication delay estimation");
@@ -403,16 +448,29 @@ protected:
         ros::Duration(0.05),
         &UrgStampedNode::tryTM, this);
   }
-  void tryTM(const ros::TimerEvent &event = ros::TimerEvent())
+  void tryTM(const ros::TimerEvent& event = ros::TimerEvent())
   {
     scip_->sendCommand("QT");
     scip_->sendCommand("TM0");
+  }
+
+  void errorCountIncrement()
+  {
+    ++error_count_;
+    if (error_count_ > error_count_max_)
+    {
+      ROS_ERROR("Error count exceeded limit, resetting the sensor and exiting.");
+      scip_->sendCommand("RS");
+      ros::Duration(0.05).sleep();
+      ros::shutdown();
+    }
   }
 
 public:
   UrgStampedNode()
     : nh_("")
     , pnh_("~")
+    , error_count_(0)
     , tm_iter_num_(5)
     , tm_median_window_(35)
     , estimated_communication_delay_init_(false)
@@ -437,6 +495,7 @@ public:
     pnh_.param("sync_interval_max", sync_interval_max, 1.5);
     sync_interval_ = std::uniform_real_distribution<double>(sync_interval_min, sync_interval_max);
     pnh_.param("delay_estim_interval", delay_estim_interval, 20.0);
+    pnh_.param("error_limit", error_count_max_, 4);
 
     pub_scan_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 10);
 
@@ -507,7 +566,7 @@ public:
   }
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "urg_stamped");
   urg_stamped::setROSLogger();
