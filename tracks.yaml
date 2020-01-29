@@ -1,3 +1,4 @@
+release_repo_url: https://github.com/seqsense/urg_stamped-release.git
 tracks:
   indigo:
     actions:
