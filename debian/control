@@ -1,0 +1,12 @@
+Source: ros-kinetic-urg-stamped
+Section: misc
+Priority: optional
+Maintainer: Atsushi Watanabe <atsushi.w@ieee.org>
+Build-Depends: debhelper (>= 9.0.0), ros-kinetic-catkin, ros-kinetic-roscpp, ros-kinetic-roslint, ros-kinetic-rostest, ros-kinetic-rosunit, ros-kinetic-sensor-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-kinetic-urg-stamped
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-kinetic-roscpp, ros-kinetic-sensor-msgs
+Description: Precisely stamped URG driver for ROS

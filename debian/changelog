@@ -1,0 +1,147 @@
+ros-kinetic-urg-stamped (0.0.9-1xenial) xenial; urgency=high
+
+  * Release 0.0.8 (#84 <https://github.com/seqsense/urg_stamped/issues/84>)
+  * Fix token name for releasing (#86 <https://github.com/seqsense/urg_stamped/issues/86>)
+  * Fix prerelease test (#85 <https://github.com/seqsense/urg_stamped/issues/85>)
+  * Remove unnecessary newline from log (#82 <https://github.com/seqsense/urg_stamped/issues/82>)
+  * Migrate to GitHub Actions (#81 <https://github.com/seqsense/urg_stamped/issues/81>)
+  * Contributors: Atsushi Watanabe, github-actions[bot]
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Wed, 10 Mar 2021 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.8-1xenial) xenial; urgency=high
+
+  * Fix token name for releasing (#86 <https://github.com/seqsense/urg_stamped/issues/86>)
+  * Fix prerelease test (#85 <https://github.com/seqsense/urg_stamped/issues/85>)
+  * Remove unnecessary newline from log (#82 <https://github.com/seqsense/urg_stamped/issues/82>)
+  * Migrate to GitHub Actions (#81 <https://github.com/seqsense/urg_stamped/issues/81>)
+  * Contributors: Atsushi Watanabe
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Wed, 10 Mar 2021 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.7-1xenial) xenial; urgency=high
+
+  * Remove travis_retry from prerelease_test.sh (#78 <https://github.com/seqsense/urg_stamped/issues/78>)
+  * Use downloaded gh-pr-comment binary in docker container (#77 <https://github.com/seqsense/urg_stamped/issues/77>)
+  * Download gh-pr-comment binary instead of using pip (#75 <https://github.com/seqsense/urg_stamped/issues/75>)
+  * Reboot lidar when it is in abnormal state (#71 <https://github.com/seqsense/urg_stamped/issues/71>)
+  * Create GitHub Release after bloom release (#72 <https://github.com/seqsense/urg_stamped/issues/72>)
+  * Update CI config (#69 <https://github.com/seqsense/urg_stamped/issues/69>)
+  * Contributors: Atsushi Watanabe, Yuta Koga
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Wed, 12 Aug 2020 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.6-1xenial) xenial; urgency=high
+
+  * Add check for device timestamp jump to node (#66 <https://github.com/seqsense/urg_stamped/issues/66>)
+  * Add timestamp jump detector to Walltime (#65 <https://github.com/seqsense/urg_stamped/issues/65>)
+  * Contributors: Yuta Koga
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Tue, 23 Jun 2020 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.5-1xenial) xenial; urgency=high
+
+  * Support Noetic (#61 <https://github.com/seqsense/urg_stamped/issues/61>)
+  * Contributors: Atsushi Watanabe
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Tue, 07 Apr 2020 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.4-1xenial) xenial; urgency=high
+
+  * Automate bloom release (#58 <https://github.com/seqsense/urg_stamped/issues/58>)
+  * Add error count check (#57 <https://github.com/seqsense/urg_stamped/issues/57>)
+  * Fix response status check (#56 <https://github.com/seqsense/urg_stamped/issues/56>)
+  * Format pointer alignment (#55 <https://github.com/seqsense/urg_stamped/issues/55>)
+  * Contributors: Atsushi Watanabe
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Wed, 29 Jan 2020 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.3-1xenial) xenial; urgency=high
+
+  * Run prerelease-test on release- branch (#49 <https://github.com/seqsense/urg_stamped/issues/49>)
+  * Refactor logging (#48 <https://github.com/seqsense/urg_stamped/issues/48>)
+  * Drop ROS Indigo and Ubuntu Trusty support (#47 <https://github.com/seqsense/urg_stamped/issues/47>)
+  * Remove old_boost_fix.h (#42 <https://github.com/seqsense/urg_stamped/issues/42>)
+  * Contributors: Atsushi Watanabe
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Thu, 15 Aug 2019 00:00:00 -0000
+
+ros-kinetic-urg-stamped (0.0.2-1xenial) xenial; urgency=high
+
+  * Fix license in manifest (#39 <https://github.com/seqsense/urg_stamped/issues/39>)
+  * Update README (#36 <https://github.com/seqsense/urg_stamped/issues/36>)
+  * Estimate sub-millisecond timestamp (#35 <https://github.com/seqsense/urg_stamped/issues/35>)
+    
+      * Estimate sub-millisecond timestamp by complementary filter fusing timestamp and packet arrival time
+      * Add packet arrival time outlier removal
+      * Add zero-delay moving average
+      * Add unit tests for filters
+    
+  * Add build matrix for ROS indigo/kinetic/melodic (#38 <https://github.com/seqsense/urg_stamped/issues/38>)
+    
+      * Add build matrix
+      * Fix workspace init
+      * Fix rosdep argument
+      * Fold test details
+      * Fix test for latest g++
+    
+  * Merge pull request #34 <https://github.com/seqsense/urg_stamped/issues/34> from seqsense/update-manifest-format
+  * Update manifest format
+  * Receive both MD and ME response by one callback (#33 <https://github.com/seqsense/urg_stamped/issues/33>)
+  * Make some info messages debug level (#30 <https://github.com/seqsense/urg_stamped/issues/30>)
+  * Fix step chage of estimated time origin (#28 <https://github.com/seqsense/urg_stamped/issues/28>)
+  * Update CI settings (#26 <https://github.com/seqsense/urg_stamped/issues/26>)
+  * Apply Apache License 2.0 (#25 <https://github.com/seqsense/urg_stamped/issues/25>)
+  * Add periodic communication delay estimation (#23 <https://github.com/seqsense/urg_stamped/issues/23>)
+    
+      * Add periodic communication delay estimation
+      * Make timeSync and delayEstimation exclusive
+      * Retry TM command if not responded
+      * Reduce duration for delay estimation
+    
+  * Fix time origin calculation (#21 <https://github.com/seqsense/urg_stamped/issues/21>)
+    
+      * Fix delay check
+      * Estimate time using received time and estimated delay
+      * Fix time origin calculation
+    
+  * Randomize time sync timing (#20 <https://github.com/seqsense/urg_stamped/issues/20>)
+  * Tweak UTM behavior with intensity (#18 <https://github.com/seqsense/urg_stamped/issues/18>)
+  * Fix II response parsing on UTM (#17 <https://github.com/seqsense/urg_stamped/issues/17>)
+  * Add TCP connection watchdog (#15 <https://github.com/seqsense/urg_stamped/issues/15>)
+  * Handle device timestamp overflow (#12 <https://github.com/seqsense/urg_stamped/issues/12>)
+    
+      * Handle device timestamp overflow
+      * Add test for Walltime
+    
+  * Add test for Decoder (#14 <https://github.com/seqsense/urg_stamped/issues/14>)
+  * Validate checksum (#11 <https://github.com/seqsense/urg_stamped/issues/11>)
+  * Add publish_intensity parameter (#9 <https://github.com/seqsense/urg_stamped/issues/9>)
+  * Fix clock gain estimation (#7 <https://github.com/seqsense/urg_stamped/issues/7>)
+    
+      * Rely on sinle clock gain estimation
+    
+  * Make debug outputs detailed (#6 <https://github.com/seqsense/urg_stamped/issues/6>)
+  * Add CI (#4 <https://github.com/seqsense/urg_stamped/issues/4>)
+    
+      * Add CI
+      * Fix lint errors
+    
+  * Estimate device clock gain (#3 <https://github.com/seqsense/urg_stamped/issues/3>)
+  * Increase outlier removal thresholds
+  * Fix message header
+  * Fix boost placeholder namespace
+  * Calculate timestamp in system time
+  * Use urg_node compatible parameter names
+  * Change path and namespace to scip2
+  * Add communication delay estimation
+  * Output LaserScan messages
+  * Add stream data processors
+  * Add parameter response processors
+  * Add base protocol layer
+  * Add TCP connection layer
+  * Contributors: Atsushi Watanabe, So Jomura, jojo43
+
+ -- Atsushi Watanabe <atsushi.w@ieee.org>  Thu, 23 Aug 2018 00:00:00 -0000
+
+
