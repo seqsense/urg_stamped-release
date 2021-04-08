@@ -1,3 +1,26 @@
+## urg_stamped (kinetic) - 0.0.10-1
+
+The packages in the `urg_stamped` repository were released into the `kinetic` distro by running `/usr/bin/bloom-release -y --no-web --ros-distro kinetic --override-release-repository-push-url https://github.com/seqsense/urg_stamped-release.git urg_stamped` on `Thu, 08 Apr 2021 01:24:42 -0000`
+
+The `urg_stamped` package was released.
+
+Version of package(s) in repository `urg_stamped`:
+
+- upstream repository: https://github.com/seqsense/urg_stamped.git
+- release repository: https://github.com/seqsense/urg_stamped-release.git
+- rosdistro version: `0.0.9-1`
+- old version: `0.0.9-1`
+- new version: `0.0.10-1`
+
+Versions of tools used:
+
+- bloom version: `0.10.6`
+- catkin_pkg version: `0.4.23`
+- rosdep version: `0.20.0`
+- rosdistro version: `0.8.3`
+- vcstools version: `0.1.42`
+
+
 ## urg_stamped (noetic) - 0.0.9-1
 
 The packages in the `urg_stamped` repository were released into the `noetic` distro by running `/usr/local/bin/bloom-release urg_stamped --track noetic --ros-distro noetic` on `Wed, 10 Mar 2021 15:10:26 -0000`
