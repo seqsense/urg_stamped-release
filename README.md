@@ -1,3 +1,26 @@
+## urg_stamped (noetic) - 0.0.17-1
+
+The packages in the `urg_stamped` repository were released into the `noetic` distro by running `/usr/bin/bloom-release -y --no-web --ros-distro noetic --override-release-repository-push-url https://github.com/seqsense/urg_stamped-release.git --debug urg_stamped` on `Wed, 13 Sep 2023 02:19:38 -0000`
+
+The `urg_stamped` package was released.
+
+Version of package(s) in repository `urg_stamped`:
+
+- upstream repository: https://github.com/seqsense/urg_stamped.git
+- release repository: https://github.com/seqsense/urg_stamped-release.git
+- rosdistro version: `0.0.16-1`
+- old version: `0.0.16-1`
+- new version: `0.0.17-1`
+
+Versions of tools used:
+
+- bloom version: `0.11.2`
+- catkin_pkg version: `0.5.2`
+- rosdep version: `0.22.2`
+- rosdistro version: `0.9.0`
+- vcstools version: `0.1.42`
+
+
 ## urg_stamped (noetic) - 0.0.16-1
 
 The packages in the `urg_stamped` repository were released into the `noetic` distro by running `/usr/bin/bloom-release -y --no-web --ros-distro noetic --override-release-repository-push-url https://github.com/seqsense/urg_stamped-release.git --debug urg_stamped` on `Thu, 05 Jan 2023 01:27:29 -0000`
