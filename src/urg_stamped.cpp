@@ -19,6 +19,7 @@
 
 #include <sensor_msgs/LaserScan.h>
 #include <urg_stamped/Status.h>
+#include <std_msgs/Header.h>
 
 #include <boost/bind/bind.hpp>
 #include <boost/format.hpp>
@@ -71,9 +72,19 @@ void UrgStampedNode::cbM(
   const uint64_t walltime_device = walltime_.update(scan.timestamp_);
   const ros::Time time_read_ros = ros::Time::fromBoost(time_read);
 
-  std::pair<ros::Time, bool> t_scan = est_->pushScanSample(time_read_ros, walltime_device);
+  if (next_sync_.isValid() && time_read_ros > next_sync_)
+  {
+    estimateSensorClock();
+    next_sync_ += clock_estim_interval_;
+  }
+
+  std::pair<ros::Time, bool> t_scan = est_->scan_->pushScanSample(time_read_ros, walltime_device);
   sensor_msgs::LaserScan msg(msg_base_);
   msg.header.stamp = t_scan.first;
+  if (is_uust2_)
+  {
+    msg.header.stamp += uust2_stamp_offset_;
+  }
   if (!t_scan.second)
   {
     scan_drop_count_++;
@@ -81,7 +92,7 @@ void UrgStampedNode::cbM(
     if (scan_drop_continuous_ > fallback_on_continuous_scan_drop_)
     {
       // Fallback to naive sensor timestamp
-      msg.header.stamp = est_->getClockState().stampToTime(walltime_device);
+      msg.header.stamp = est_->clock_->getClockState().stampToTime(walltime_device);
     }
     else
     {
@@ -131,9 +142,10 @@ void UrgStampedNode::cbM(
   error_count_ = ResponseErrorCount();
 }
 
-void UrgStampedNode::cbTMSend(const boost::posix_time::ptime& time_send)
+void UrgStampedNode::cbTMSend(
+    const boost::posix_time::ptime& time_send, const std::string& cmd)
 {
-  time_tm_request = time_send;
+  time_tm_request_ = std::make_pair(cmd, time_send);
 }
 
 void UrgStampedNode::cbTM(
@@ -176,39 +188,44 @@ void UrgStampedNode::cbTM(
       delay_estim_state_ = DelayEstimState::ESTIMATING;
 
       tm_start_time_ = ros::Time::now();
-      est_->startSync();
+      est_->clock_->startSync();
 
-      scip_->sendCommand(
-          "TM1",
-          boost::bind(&UrgStampedNode::cbTMSend, this, boost::arg<1>()));
+      sendTM1();
       break;
     }
     case '1':
     {
+      if (time_tm_request_.first != echo_back)
+      {
+        scip2::logger::info()
+            << "Ignoring unmatched TM1 response. Expected " << time_tm_request_.first
+            << ", received " << echo_back
+            << std::endl;
+        break;
+      }
+
       const uint64_t walltime_device = walltime_.update(time_device.timestamp_);
 
-      est_->pushSyncSample(
-          ros::Time::fromBoost(time_tm_request),
+      est_->clock_->pushSyncSample(
+          ros::Time::fromBoost(time_tm_request_.second),
           ros::Time::fromBoost(time_read),
           walltime_device);
 
-      if (est_->hasEnoughSyncSamples())
+      if (est_->clock_->hasEnoughSyncSamples())
       {
         scip_->sendCommand("TM2");
         break;
       }
 
-      // UST doesn't respond immediately when next TM1 command is sent without sleep
-      sleepRandom(0, urg_stamped::device_state_estimator::DEVICE_TIMESTAMP_RESOLUTION);
+      const std::pair<ros::Duration, ros::Duration> wait = est_->clock_->syncWaitDuration();
+      sleepRandom(wait.first.toSec(), wait.second.toSec());
 
-      scip_->sendCommand(
-          "TM1",
-          boost::bind(&UrgStampedNode::cbTMSend, this, boost::arg<1>()));
+      sendTM1();
       break;
     }
     case '2':
     {
-      if (!est_->finishSync() && !est_->getClockState().initialized_)
+      if (!est_->clock_->finishSync() && !est_->clock_->getClockState().initialized_)
       {
         // Immediately retry if initial clock sync is failed
         scip2::logger::debug()
@@ -316,36 +333,68 @@ void UrgStampedNode::cbVV(
   }
   if (!est_)
   {
+    int firm_major;
+    {
+      const auto firm_it = params.find("FIRM");
+      if (firm_it == params.end())
+      {
+        scip2::logger::error()
+            << "Could not detect sensor hardware revision. Fallback to UUST1 mode"
+            << std::endl;
+        firm_major = 1;
+      }
+      else
+      {
+        firm_major = std::stoi(firm_it->second);
+      }
+    }
     std::string prod;
-    const auto prod_it = params.find("PROD");
-    if (prod_it == params.end())
     {
-      scip2::logger::error()
-          << "Could not detect sensor model. Fallback to UTM mode"
-          << std::endl;
-      prod = "UTM";
+      const auto prod_it = params.find("PROD");
+      if (prod_it == params.end())
+      {
+        scip2::logger::error()
+            << "Could not detect sensor model. Fallback to UTM mode"
+            << std::endl;
+        prod = "UTM";
+      }
+      else
+      {
+        prod = prod_it->second.substr(0, 3);
+      }
+    }
+    device_state_estimator::ClockEstimator::Ptr clock;
+    device_state_estimator::ScanEstimator::Ptr scan;
+    std::string model;
+    is_uust2_ = false;
+    if (prod == "UTM")
+    {
+      clock.reset(new device_state_estimator::ClockEstimatorUUST1());
+      scan.reset(new device_state_estimator::ScanEstimatorUTM(clock, ideal_scan_interval_));
     }
     else
     {
-      prod = prod_it->second.substr(0, 3);
+      if (prod != "UST")
+      {
+        scip2::logger::info()
+            << "Unknown sensor model. Fallback to UST mode"
+            << std::endl;
+      }
+      if (firm_major >= 4)
+      {
+        model = "UST (UUST2)";
+        clock.reset(new device_state_estimator::ClockEstimatorUUST2());
+        is_uust2_ = true;
+      }
+      else
+      {
+        model = "UST (UUST1)";
+        clock.reset(new device_state_estimator::ClockEstimatorUUST1());
+      }
+      scan.reset(new device_state_estimator::ScanEstimatorUST(clock, ideal_scan_interval_));
     }
-    if (prod == "UST")
-    {
-      est_.reset(new device_state_estimator::EstimatorUST(ideal_scan_interval_));
-      scip2::logger::info() << "Initialized timestamp estimator for UST" << std::endl;
-    }
-    else if (prod == "UTM")
-    {
-      est_.reset(new device_state_estimator::EstimatorUTM(ideal_scan_interval_));
-      scip2::logger::info() << "Initialized timestamp estimator for UTM" << std::endl;
-    }
-    else
-    {
-      est_.reset(new device_state_estimator::EstimatorUST(ideal_scan_interval_));
-      scip2::logger::info()
-          << "Unknown sensor model. Initialized timestamp estimator for UST"
-          << std::endl;
-    }
+    est_.reset(new device_state_estimator::Estimator(clock, scan));
+    scip2::logger::info() << "Initialized timestamp estimator for " << model << std::endl;
   }
 }
 
@@ -550,6 +599,7 @@ void UrgStampedNode::retryTM(const ros::TimerEvent& event)
   {
     case DelayEstimState::STOPPING_SCAN:
       scip2::logger::debug() << "Stopping scan" << std::endl;
+      publishSyncStart();
       scip_->sendCommand("QT");
       tm_try_count_++;
       if (tm_try_count_ > tm_try_max_)
@@ -645,15 +695,25 @@ void UrgStampedNode::sleepRandom(const double min, const double max)
   ros::Duration(rnd(random_engine_)).sleep();
 }
 
+void UrgStampedNode::sendTM1()
+{
+  std::stringstream cmd;
+  tm_key_++;
+  cmd << "TM1;" << std::hex << tm_key_;
+  scip_->sendCommand(
+      cmd.str(),
+      boost::bind(&UrgStampedNode::cbTMSend, this, boost::arg<1>(), cmd.str()));
+}
+
 void UrgStampedNode::publishStatus()
 {
   if (!est_)
   {
     return;
   }
-  const device_state_estimator::ClockState clock = est_->getClockState();
-  const device_state_estimator::ScanState scan = est_->getScanState();
-  const device_state_estimator::CommDelay comm_delay = est_->getCommDelay();
+  const device_state_estimator::ClockState clock = est_->clock_->getClockState();
+  const device_state_estimator::ScanState scan = est_->scan_->getScanState();
+  const device_state_estimator::CommDelay comm_delay = est_->clock_->getCommDelay();
 
   urg_stamped::Status msg;
   msg.header.stamp = ros::Time::now();
@@ -666,16 +726,51 @@ void UrgStampedNode::publishStatus()
   pub_status_.publish(msg);
 }
 
+void UrgStampedNode::cbSyncStart(const std_msgs::Header::ConstPtr& msg)
+{
+  if (msg->frame_id == msg_base_.header.frame_id)
+  {
+    return;
+  }
+  switch (delay_estim_state_)
+  {
+    case DelayEstimState::IDLE:
+    case DelayEstimState::EXITING:
+      return;
+      break;
+    default:
+      break;
+  }
+  std::uniform_real_distribution<double> rnd(0, clock_estim_interval_.toSec());
+  ros::Duration offset(rnd(random_engine_));
+  next_sync_ += offset;
+  scip2::logger::info()
+      << std::fixed << std::setprecision(3)
+      << "Concurrent time synchronization detected. Delaying the next time sync by "
+      << offset.toSec() << "s"
+      << std::endl;
+}
+
+void UrgStampedNode::publishSyncStart()
+{
+  std_msgs::Header msg;
+  msg.frame_id = msg_base_.header.frame_id;
+  msg.stamp = ros::Time::now();
+  pub_sync_start_.publish(msg);
+}
+
 UrgStampedNode::UrgStampedNode()
   : nh_("")
   , pnh_("~")
   , failed_(false)
   , delay_estim_state_(DelayEstimState::IDLE)
+  , tm_key_(0)
   , last_sync_time_(0)
   , tm_success_(false)
   , scan_drop_count_(0)
   , scan_drop_continuous_(0)
   , cmd_resetting_(false)
+  , is_uust2_(false)
 {
   std::random_device rd;
   random_engine_.seed(rd());
@@ -691,6 +786,7 @@ UrgStampedNode::UrgStampedNode()
   pnh_.param("clock_estim_interval", clock_estim_interval, 30.0);
   pnh_.param("error_limit", error_count_max_, 4);
   pnh_.param("fallback_on_continuous_scan_drop", fallback_on_continuous_scan_drop_, 5);
+  clock_estim_interval_ = ros::Duration(clock_estim_interval);
 
   // 30s * 40Hz = 1200scans total, output info level log if dropped 90/1200scans or more
   pnh_.param("log_scan_drop_more_than", log_scan_drop_more_than_, static_cast<int>(clock_estim_interval * 3));
@@ -700,6 +796,11 @@ UrgStampedNode::UrgStampedNode()
   tm_command_interval_ = ros::Duration(tm_interval);
   pnh_.param("tm_timeout", tm_timeout, 10.0);
   tm_try_max_ = static_cast<int>(tm_timeout / tm_interval);
+
+  // UUST2 doesn't support estimating communication delay. Static offset can be specified to compensate the delay
+  double uust2_stamp_offset;
+  pnh_.param("uust2_stamp_offset", uust2_stamp_offset, 0.0);
+  uust2_stamp_offset_ = ros::Duration(uust2_stamp_offset);
 
   urg_stamped::setROSLogger(msg_base_.header.frame_id + ": ");
 
@@ -716,6 +817,9 @@ UrgStampedNode::UrgStampedNode()
 
   pub_scan_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 10);
   pub_status_ = pnh_.advertise<urg_stamped::Status>("status", 1, true);
+
+  pub_sync_start_ = nh_.advertise<std_msgs::Header>("urg_stamped_sync_start", 1, true);
+  sub_sync_start_ = nh_.subscribe("urg_stamped_sync_start", 1, &UrgStampedNode::cbSyncStart, this);
 
   device_.reset(new scip2::ConnectionTcp(ip, port));
   device_->registerCloseCallback(
@@ -778,10 +882,9 @@ UrgStampedNode::UrgStampedNode()
                   boost::arg<2>(),
                   boost::arg<3>()));
 
-  if (clock_estim_interval > 0.0)
+  if (clock_estim_interval_ > ros::Duration(0))
   {
-    timer_delay_estim_ = nh_.createTimer(
-        ros::Duration(clock_estim_interval), &UrgStampedNode::estimateSensorClock, this);
+    next_sync_ = ros::Time::now() + clock_estim_interval_;
   }
 }
 
